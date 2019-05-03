@@ -6,12 +6,15 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.os.Build;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.NotificationCompat;
+import android.util.Log;
 
+import com.marianhello.backgroundgeolocation.R;
 import com.marianhello.logging.LoggerManager;
 
 public class NotificationHelper {
@@ -32,7 +35,7 @@ public class NotificationHelper {
         public NotificationFactory(Context context) {
             mContext = context;
             mResolver = ResourceResolver.newInstance(context);
-            logger =  LoggerManager.getLogger(NotificationFactory.class);
+            logger = LoggerManager.getLogger(NotificationFactory.class);
         }
 
         private Integer parseNotificationIconColor(String color) {
@@ -49,38 +52,30 @@ public class NotificationHelper {
 
         public Notification getNotification(String title, String text, String largeIcon, String smallIcon, String color) {
             Context appContext = mContext.getApplicationContext();
-
-            // Build a Notification required for running service in foreground.
-            NotificationCompat.Builder builder = new NotificationCompat.Builder(mContext, NotificationHelper.SERVICE_CHANNEL_ID);
-
-            builder.setContentTitle(title);
-            builder.setContentText(text);
-            if (smallIcon != null && !smallIcon.isEmpty()) {
-                builder.setSmallIcon(mResolver.getDrawable(smallIcon));
-            } else {
-                builder.setSmallIcon(android.R.drawable.ic_menu_mylocation);
-            }
-            if (largeIcon != null && !largeIcon.isEmpty()) {
-                builder.setLargeIcon(BitmapFactory.decodeResource(appContext.getResources(), mResolver.getDrawable(largeIcon)));
-            }
-            if (color != null && !color.isEmpty()) {
-                builder.setColor(this.parseNotificationIconColor(color));
-            }
-
-            // Add an onclick handler to the notification
             String packageName = appContext.getPackageName();
-            Intent launchIntent = appContext.getPackageManager().getLaunchIntentForPackage(packageName);
-            if (launchIntent != null) {
-                // NOTICE: testing apps might not have registered launch intent
-                launchIntent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                PendingIntent contentIntent = PendingIntent.getActivity(appContext, 0, launchIntent, PendingIntent.FLAG_CANCEL_CURRENT);
-                builder.setContentIntent(contentIntent);
-            }
+            Log.d("NOMBRE DEL PACKAGE", "getNotification: " + packageName);
+            Intent i = appContext.getPackageManager().getLaunchIntentForPackage(packageName);
+            PendingIntent pendingIntent = PendingIntent.getActivity(
+                    this.mContext,
+                    0,
+                    i,
+                    PendingIntent.FLAG_UPDATE_CURRENT
+            );
 
-            Notification notification = builder.build();
-            notification.flags |= Notification.FLAG_ONGOING_EVENT | Notification.FLAG_FOREGROUND_SERVICE | Notification.FLAG_NO_CLEAR;
+            String NOTIFICATION_CHANNEL_ID = "my_channel_id_01";
 
-            return notification;
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(this.mContext, NOTIFICATION_CHANNEL_ID);
+            return builder
+                    .setContentTitle(title)
+                    .setContentText(text)
+                    .setContentIntent(pendingIntent)
+                    .setAutoCancel(true)
+                    .setDefaults(Notification.DEFAULT_LIGHTS | Notification.DEFAULT_SOUND)
+                    .setVibrate(new long[]{0L})
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                    .setLargeIcon(BitmapFactory.decodeResource(this.mContext.getResources(), R.mipmap.ic_launcher))
+                    .build();
         }
     }
 
@@ -123,7 +118,7 @@ public class NotificationHelper {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
-    public static NotificationChannel createSyncChannel(){
+    public static NotificationChannel createSyncChannel() {
         NotificationChannel channel = new NotificationChannel(SYNC_CHANNEL_ID, SYNC_CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW);
         channel.setDescription(SYNC_CHANNEL_DESCRIPTION);
         channel.enableVibration(false);
@@ -131,7 +126,7 @@ public class NotificationHelper {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
-    public static NotificationChannel createAndroidPermissionsChannel(CharSequence name ){
+    public static NotificationChannel createAndroidPermissionsChannel(CharSequence name) {
         NotificationChannel channel = new NotificationChannel(ANDROID_PERMISSIONS_CHANNEL_ID, name, NotificationManager.IMPORTANCE_HIGH);
         channel.enableVibration(false);
         return channel;
