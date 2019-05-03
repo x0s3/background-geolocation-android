@@ -53,29 +53,45 @@ public class NotificationHelper {
         public Notification getNotification(String title, String text, String largeIcon, String smallIcon, String color) {
             Context appContext = mContext.getApplicationContext();
             String packageName = appContext.getPackageName();
-            Log.d("NOMBRE DEL PACKAGE", "getNotification: " + packageName);
             Intent i = appContext.getPackageManager().getLaunchIntentForPackage(packageName);
             PendingIntent pendingIntent = PendingIntent.getActivity(
-                    this.mContext,
-                    0,
+                    appContext,
+                    1,
                     i,
                     PendingIntent.FLAG_UPDATE_CURRENT
             );
 
-            String NOTIFICATION_CHANNEL_ID = "my_channel_id_01";
 
-            NotificationCompat.Builder builder = new NotificationCompat.Builder(this.mContext, NOTIFICATION_CHANNEL_ID);
-            return builder
+            String NOTIFICATION_CHANNEL_ID = "my_channel_id_01";
+            NotificationManager notificationManager = (NotificationManager) appContext.getSystemService(Context.NOTIFICATION_SERVICE);
+
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                NotificationChannel notificationChannel = new NotificationChannel(NOTIFICATION_CHANNEL_ID, "My Notifications", NotificationManager.IMPORTANCE_DEFAULT);
+
+                // Configure the notification channel.
+                //notificationChannel.setDescription("Channel description");
+                //notificationChannel.enableLights(true);
+                //notificationChannel.setVibrationPattern(new long[]{0L});
+                notificationChannel.enableVibration(false);
+                notificationManager.createNotificationChannel(notificationChannel);
+            }
+
+
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(mContext, NOTIFICATION_CHANNEL_ID);
+            Notification mNotification = builder
                     .setContentTitle(title)
                     .setContentText(text)
                     .setContentIntent(pendingIntent)
                     .setAutoCancel(true)
-                    .setDefaults(Notification.DEFAULT_LIGHTS | Notification.DEFAULT_SOUND)
-                    .setVibrate(new long[]{0L})
                     .setSmallIcon(R.mipmap.ic_launcher)
-                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                    .setLargeIcon(BitmapFactory.decodeResource(this.mContext.getResources(), R.mipmap.ic_launcher))
+                    .setLargeIcon(BitmapFactory.decodeResource(mContext.getResources(), R.mipmap.ic_launcher))
                     .build();
+
+            notificationManager.notify(/*notification id*/1, mNotification);
+
+            return mNotification;
+
         }
     }
 
