@@ -6,15 +6,15 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.os.Build;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.NotificationCompat;
-import android.util.Log;
 
 import com.marianhello.backgroundgeolocation.R;
+import com.marianhello.bgloc.service.LocationService;
+import com.marianhello.bgloc.service.LocationServiceImpl;
 import com.marianhello.logging.LoggerManager;
 
 public class NotificationHelper {
@@ -54,6 +54,7 @@ public class NotificationHelper {
             Context appContext = mContext.getApplicationContext();
             String packageName = appContext.getPackageName();
             Intent i = appContext.getPackageManager().getLaunchIntentForPackage(packageName);
+
             PendingIntent pendingIntent = PendingIntent.getActivity(
                     appContext,
                     1,
@@ -61,21 +62,26 @@ public class NotificationHelper {
                     PendingIntent.FLAG_UPDATE_CURRENT
             );
 
+            Intent stopGPSIntent = new Intent(appContext, LocationServiceImpl.class);
+            stopGPSIntent.setAction("stopGPS");
+            PendingIntent stopIntent = PendingIntent.getService(
+                    appContext,
+                    1,
+                    stopGPSIntent,
+                    PendingIntent.FLAG_CANCEL_CURRENT
+            );
+
 
             String NOTIFICATION_CHANNEL_ID = "my_channel_id_01";
             NotificationManager notificationManager = (NotificationManager) appContext.getSystemService(Context.NOTIFICATION_SERVICE);
 
-
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 NotificationChannel notificationChannel = new NotificationChannel(NOTIFICATION_CHANNEL_ID, "My Notifications", NotificationManager.IMPORTANCE_LOW);
-
-                // Configure the notification channel.
-                //notificationChannel.setDescription("Channel description");
-                //notificationChannel.enableLights(true);
-                //notificationChannel.setVibrationPattern(new long[]{0L});
                 notificationChannel.enableVibration(false);
                 notificationManager.createNotificationChannel(notificationChannel);
             }
+
+            //Intent intentAction = new Intent(appContext,ActionReceiver.class);
 
 
             NotificationCompat.Builder builder = new NotificationCompat.Builder(mContext, NOTIFICATION_CHANNEL_ID);
@@ -86,6 +92,8 @@ public class NotificationHelper {
                     .setAutoCancel(true)
                     .setSmallIcon(R.mipmap.ic_launcher)
                     .setLargeIcon(BitmapFactory.decodeResource(mContext.getResources(), R.mipmap.ic_launcher))
+                    .addAction(R.mipmap.ic_launcher, "Desactivar geolocalización", stopIntent)
+                    //.setOngoing(true)
                     .build();
 
             notificationManager.notify(/*notification id*/1, mNotification);
