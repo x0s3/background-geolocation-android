@@ -30,6 +30,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.Process;
 import android.support.annotation.Nullable;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.LocalBroadcastManager;
 
 import com.marianhello.bgloc.Config;
@@ -100,7 +101,9 @@ public class LocationServiceImpl extends Service implements ProviderDelegate, Lo
 
     public static final int MSG_ON_HTTP_AUTHORIZATION = 107;
 
-    /** notification id */
+    /**
+     * notification id
+     */
     private static int NOTIFICATION_ID = 1;
 
     private ResourceResolver mResolver;
@@ -197,21 +200,21 @@ public class LocationServiceImpl extends Service implements ProviderDelegate, Lo
 
         mPostLocationTask = new PostLocationTask(mLocationDAO,
                 new PostLocationTask.PostLocationTaskListener() {
-            @Override
-            public void onRequestedAbortUpdates() {
-                handleRequestedAbortUpdates();
-            }
+                    @Override
+                    public void onRequestedAbortUpdates() {
+                        handleRequestedAbortUpdates();
+                    }
 
-            @Override
-            public void onHttpAuthorizationUpdates() {
-                handleHttpAuthorizationUpdates();
-            }
+                    @Override
+                    public void onHttpAuthorizationUpdates() {
+                        handleHttpAuthorizationUpdates();
+                    }
 
-            @Override
-            public void onSyncRequested() {
-                SyncService.sync(mSyncAccount, mResolver.getAuthority(), false);
-            }
-        }, new ConnectivityListener() {
+                    @Override
+                    public void onSyncRequested() {
+                        SyncService.sync(mSyncAccount, mResolver.getAuthority(), false);
+                    }
+                }, new ConnectivityListener() {
             @Override
             public boolean hasConnectivity() {
                 return isNetworkAvailable();
@@ -266,6 +269,19 @@ public class LocationServiceImpl extends Service implements ProviderDelegate, Lo
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+
+        if (intent != null) {
+            if (intent.getAction() != null) {
+                if (intent.getAction().equals("stopGPS")) {
+                    logger.debug("HOLA MANOLA XDXD");
+                    stop();
+                    NotificationManagerCompat p = NotificationManagerCompat.from(getBaseContext());
+                    p.cancel(1);
+                    stopForeground(true);
+                }
+            }
+        }
+
         if (intent == null) {
             // when service was killed and restarted we will restart service
             start();
@@ -480,7 +496,7 @@ public class LocationServiceImpl extends Service implements ProviderDelegate, Lo
     }
 
     @Override
-    public synchronized  void startHeadlessTask() {
+    public synchronized void startHeadlessTask() {
         if (mHeadlessFunction != null) {
             mHeadlessTaskRunner = new HeadlessTaskRunner(this);
             mHeadlessTaskRunner.setFunction(mHeadlessFunction);
@@ -546,7 +562,7 @@ public class LocationServiceImpl extends Service implements ProviderDelegate, Lo
         bundle.putParcelable("payload", location);
         broadcastMessage(bundle);
 
-        runHeadlessTask(new StationaryTask(location){
+        runHeadlessTask(new StationaryTask(location) {
             @Override
             public void onError(String errorMessage) {
                 logger.error("Stationary task error: {}", errorMessage);
@@ -570,7 +586,7 @@ public class LocationServiceImpl extends Service implements ProviderDelegate, Lo
         bundle.putParcelable("payload", activity);
         broadcastMessage(bundle);
 
-        runHeadlessTask(new ActivityTask(activity){
+        runHeadlessTask(new ActivityTask(activity) {
             @Override
             public void onError(String errorMessage) {
                 logger.error("Activity task error: {}", errorMessage);
@@ -715,7 +731,8 @@ public class LocationServiceImpl extends Service implements ProviderDelegate, Lo
         sLocationTransform = transform;
     }
 
-    public static @Nullable LocationTransform getLocationTransform() {
+    public static @Nullable
+    LocationTransform getLocationTransform() {
         return sLocationTransform;
     }
 }
